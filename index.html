@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Pixel Love Card</title>
+<style>
+  :root{
+    --bg:#ffdff0;
+    --pink:#ff6b9a;
+    --dark:#9b114d;
+    --panel:#fff5f9;
+    --pixel:#b30059;
+  }
+  html,body{height:100%;margin:0;font-family: "Courier New", Courier, monospace;background:var(--bg);}
+  .wrap{
+    min-height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:30px;
+    box-sizing:border-box;
+  }
+
+  /* Card panel */
+  .card{
+    width:360px;
+    background:linear-gradient(#fff #fffafa);
+    border:5px solid var(--pixel);
+    border-radius:8px;
+    box-shadow:8px 8px 0 rgba(0,0,0,0.06);
+    padding:22px;
+    text-align:center;
+    position:relative;
+    overflow:visible;
+  }
+
+  /* Pixel title */
+  .title{
+    font-size:24px;
+    color:var(--pixel);
+    text-shadow:2px 2px #ffc7de;
+    margin:6px 0 14px;
+    letter-spacing:1px;
+  }
+
+  /* Pixel text area */
+  .text{
+    height:64px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:16px;
+    color:var(--dark);
+    background:linear-gradient(180deg,#fff #ffeef6);
+    border:3px solid #ffd0e6;
+    margin:6px auto 12px;
+    width:85%;
+    border-radius:4px;
+    box-shadow:inset 0 2px 0 rgba(255,255,255,0.6);
+    padding:10px;
+  }
+
+  /* Pixel buttons (START / NEXT / BACK / END) */
+  .controls{
+    display:flex;
+    gap:10px;
+    justify-content:center;
+    margin-top:14px;
+    flex-wrap:wrap;
+  }
+  .pixel-btn{
+    --w:120px;
+    display:inline-block;
+    padding:10px 12px;
+    min-width:90px;
+    text-transform:uppercase;
+    font-weight:700;
+    letter-spacing:1px;
+    font-size:14px;
+    color:white;
+    background:linear-gradient(#ff7aa8,#ff5a87);
+    border:4px solid var(--pixel);
+    border-bottom-width:8px;
+    border-right-width:8px;
+    border-radius:6px;
+    box-shadow:6px 6px 0 rgba(155,17,77,0.95);
+    cursor:pointer;
+    user-select:none;
+  }
+  .pixel-btn:active{transform:translate(2px,2px); box-shadow:4px 4px 0 rgba(155,17,77,0.9);}
+
+  /* tiny pixel indicator row */
+  .pixel-row{
+    display:flex;
+    gap:6px;
+    justify-content:center;
+    margin-top:14px;
+  }
+  .pixel-dot{
+    width:12px; height:12px; background:var(--pixel); box-shadow:inset 2px 2px rgba(255,255,255,0.15);
+  }
+
+  /* Rose pop animation */
+  .rose{
+    position:fixed;
+    font-size:28px;
+    pointer-events:none;
+    transform-origin:center;
+    animation:rosePop 1400ms ease-out forwards;
+    z-index:9999;
+    filter: drop-shadow(0 6px 4px rgba(0,0,0,0.12));
+  }
+  @keyframes rosePop{
+    0%{transform:translateY(20px) scale(0); opacity:0;}
+    40%{transform:translateY(-6px) scale(1.05); opacity:1;}
+    100%{transform:translateY(-120px) scale(0.9); opacity:0;}
+  }
+
+  /* Heart SVG box (progress style) */
+  .heart-stage{
+    width:240px; height:220px; margin:12px auto 2px; display:block;
+  }
+  /* small helper for text after fill */
+  .final-note{font-size:15px;color:var(--dark); margin-top:8px; min-height:20px;}
+
+  /* responsive */
+  @media(max-width:420px){
+    .card{width:92%;}
+    .text{height:72px;font-size:15px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card" id="card">
+    <div class="title">Roses for You</div>
+
+    <div class="text" id="textArea">This is how much I love you...</div>
+
+    <!-- Heart SVG with mask fill controlled by JS -->
+    <svg class="heart-stage" viewBox="0 0 120 110" xmlns="http://www.w3.org/2000/svg" id="heartSVG">
+      <!-- background heart outline (pixel style using stroke) -->
+      <defs>
+        <clipPath id="heartClip">
+          <!-- heart path -->
+          <path d="M60 100 L20 60 C5 45 15 20 40 25 C60 30 60 50 60 50 C60 50 60 30 80 25 C105 20 115 45 100 60 Z"/>
+        </clipPath>
+      </defs>
+
+      <!-- empty heart (outline) -->
+      <path d="M60 100 L20 60 C5 45 15 20 40 25 C60 30 60 50 60 50 C60 50 60 30 80 25 C105 20 115 45 100 60 Z"
+            fill="#fff5f8" stroke="#b30059" stroke-width="3" stroke-linejoin="round"/>
+
+      <!-- fill rectangle (we'll animate its width) clipped to heart -->
+      <g clip-path="url(#heartClip)">
+        <rect id="heartFillRect" x="0" y="0" width="0" height="110" fill="#ff0066"></rect>
+      </g>
+
+      <!-- pixel grid over heart to make it pixel-ish (thin lines) -->
+      <g opacity="0.08">
+        <rect x="0" y="0" width="120" height="110" fill="none" stroke="#000" stroke-width="0.2" />
+      </g>
+    </svg>
+
+    <div class="final-note" id="finalNote"></div>
+
+    <div class="controls" id="controls">
+      <div class="pixel-btn" id="startBtn" onclick="startFlow()">START</div>
+      <div class="pixel-btn" id="backBtn" onclick="goBack()" style="display:none">BACK</div>
+      <div class="pixel-btn" id="nextBtn" onclick="goNext()" style="display:none">NEXT</div>
+      <div class="pixel-btn" id="fillBtn" onclick="fillHeart()" style="display:none">FILL ❤️</div>
+      <div class="pixel-btn" id="endBtn" onclick="endFlow()" style="display:none">END</div>
+    </div>
+
+    <div class="pixel-row" id="dots">
+      <div class="pixel-dot"></div>
+      <div class="pixel-dot"></div>
+      <div class="pixel-dot"></div>
+      <div class="pixel-dot"></div>
+      <div class="pixel-dot"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Steps:
+  // 0 = initial (START visible)
+  // 1 = More than words can say (NEXT visible)
+  // 2 = More than you can ever imagine (NEXT visible)
+  // 3 = Show heart (FILL visible)
+  // 4 = Heart filled + final text (END visible)
+
+  let step = 0;
+  const textArea = document.getElementById('textArea');
+  const startBtn = document.getElementById('startBtn');
+  const backBtn = document.getElementById('backBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const fillBtn = document.getElementById('fillBtn');
+  const endBtn = document.getElementById('endBtn');
+  const heartRect = document.getElementById('heartFillRect');
+  const heartSVG = document.getElementById('heartSVG');
+  const finalNote = document.getElementById('finalNote');
+
+  // Helper: spawn a rose at random near the card, for popping effect
+  function spawnRose(){
+    const rose = document.createElement('div');
+    rose.className = 'rose';
+    rose.innerText = '🌹';
+    // spawn near center area
+    const card = document.getElementById('card');
+    const rect = card.getBoundingClientRect();
+    const x = rect.left + rect.width * (0.2 + Math.random()*0.6);
+    const y = rect.top + rect.height * (0.4 + Math.random()*0.4);
+    rose.style.left = (x|0) + 'px';
+    rose.style.top = (y|0) + 'px';
+    document.body.appendChild(rose);
+    setTimeout(()=>rose.remove(),1400);
+  }
+
+  function updateControls(){
+    // reset visibility
+    startBtn.style.display = 'none';
+    backBtn.style.display = 'none';
+    nextBtn.style.display = 'none';
+    fillBtn.style.display = 'none';
+    endBtn.style.display = 'none';
+
+    if(step === 0) startBtn.style.display = 'inline-block';
+    if(step === 1) { backBtn.style.display='inline-block'; nextBtn.style.display='inline-block'; }
+    if(step === 2) { backBtn.style.display='inline-block'; nextBtn.style.display='inline-block'; }
+    if(step === 3) { backBtn.style.display='inline-block'; fillBtn.style.display='inline-block'; }
+    if(step === 4) { endBtn.style.display='inline-block'; backBtn.style.display='inline-block'; }
+  }
+
+  function startFlow(){
+    step = 1;
+    textArea.innerText = "More than words can say.";
+    finalNote.innerText = '';
+    heartRect.setAttribute('width','0');
+    spawnRose();
+    updateControls();
+  }
+
+  function goBack(){
+    if(step>0) step--;
+    if(step===0){
+      textArea.innerText = "This is how much I love you...";
+      finalNote.innerText = '';
+    } else if(step===1){
+      textArea.innerText = "More than words can say.";
+      finalNote.innerText = '';
+    } else if(step===2){
+      textArea.innerText = "More than you can ever imagine.";
+      finalNote.innerText = '';
+    } else if(step===3){
+      textArea.innerText = "Watch my heart fill for you ❤️";
+      finalNote.innerText = '';
+      heartRect.setAttribute('width','0');
+    } else if(step===4){
+      textArea.innerText = "My whole heart is yours.";
+      finalNote.innerText = '';
+    }
+    updateControls();
+  }
+
+  function goNext(){
+    if(step===1){
+      step = 2;
+      textArea.innerText = "More than you can ever imagine.";
+      spawnRose();
+    } else if(step===2){
+      step = 3;
+      textArea.innerText = "Watch my heart fill for you ❤️";
+      spawnRose();
+    }
+    updateControls();
+  }
+
+  function fillHeart(){
+    if(step!==3) return;
+    // animate width from 0 to 100 over time
+    let w = 0;
+    const dur = 900; // ms
+    const frames = 30;
+    const inc = 120/frames; // SVG width domain approx 120
+    const interval = dur/frames;
+    const iv = setInterval(()=>{
+      w += inc;
+      if(w >= 120){
+        w = 120;
+        clearInterval(iv);
+        step = 4;
+        textArea.innerText = "My whole heart is yours.";
+        finalNote.innerText = "All of this is for you ❤️";
+        spawnRose();
+        updateControls();
+      }
+      heartRect.setAttribute('width', String(w));
+    }, interval);
+    // spawn roses while filling
+    spawnRose();
+    setTimeout(spawnRose,200);
+    setTimeout(spawnRose,500);
+  }
+
+  function endFlow(){
+    // final click: a few roses + celebratory fill (already filled)
+    spawnRose(); spawnRose(); spawnRose();
+    textArea.innerText = "All of this is for you ❤️";
+    finalNote.innerText = "Forever and always.";
+    // leave heart filled
+    heartRect.setAttribute('width','120');
+    updateControls();
+  }
+
+  // initial setup
+  updateControls();
+
+  // allow keyboard navigation for fun (Enter = next/start, ArrowLeft = back)
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){
+      if(step===0) startFlow();
+      else if(step===1 || step===2) goNext();
+      else if(step===3) fillHeart();
+      else if(step===4) endFlow();
+    } else if(e.key === 'ArrowLeft'){ goBack(); }
+  });
+</script>
+</body>
+</html>
